@@ -1,0 +1,57 @@
+# Unity-generated data and local editor settings
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uild/
+/[Bb]uilds/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/.analysis/
+
+# IDE-generated files
+.vs/
+.vs.meta
+.idea/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Build/test outputs and crash logs
+/Tests/*.exe
+*.apk
+*.aab
+*.unitypackage
+*.log
+*.tmp
+*.bak
+sysinfo.txt
+crashlytics-build.properties
+
+# Private configuration and signing material
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
