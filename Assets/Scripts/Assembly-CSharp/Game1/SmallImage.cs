@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Game1.Assets.src.e;
 
@@ -25,6 +25,45 @@ namespace Game1
 		public static short maxSmall;
 
 		public static Dictionary<int, Image> imageRaw = new Dictionary<int, Image>();
+
+        private sealed class PendingIcon
+        {
+            public int id;
+            public long retryAt;
+            public int delay = 3000;
+        }
+        private static readonly Dictionary<int, PendingIcon> pendingIcons = new Dictionary<int, PendingIcon>();
+        private static readonly Queue<PendingIcon> retryQueue = new Queue<PendingIcon>();
+
+        private static void SendIconRequest(PendingIcon pending)
+        {
+            pending.retryAt = mSystem.currentTimeMillis() + pending.delay;
+            pending.delay = System.Math.Min(30000, pending.delay * 2);
+            Service.gI().requestIcon(pending.id);
+        }
+
+        private static void RequestMissingIcon(int id)
+        {
+            PendingIcon pending;
+            if (pendingIcons.TryGetValue(id, out pending)) return;
+            pending = new PendingIcon { id = id };
+            pendingIcons[id] = pending;
+            retryQueue.Enqueue(pending);
+            SendIconRequest(pending);
+        }
+
+        private static void RetryMissingIcons()
+        {
+            if (!Session_ME.gI().isConnected() && !Session_ME2.gI().isConnected()) return;
+            int budget = System.Math.Min(4, retryQueue.Count);
+            long now = mSystem.currentTimeMillis();
+            while (budget-- > 0) {
+                PendingIcon pending = retryQueue.Dequeue(), current;
+                if (!pendingIcons.TryGetValue(pending.id, out current) || !ReferenceEquals(current, pending)) continue;
+                if (now >= pending.retryAt) SendIconRequest(pending);
+                retryQueue.Enqueue(pending);
+            }
+        }
 
 		public SmallImage()
 		{
@@ -109,7 +148,16 @@ namespace Game1
         public static bool ReceiveImage(int id, Image image)
         {
             if (!EnsureSlot(id)) return false;
-            if (image == null) image = Image.createRGBImage(new int[1], 1, 1, bl: true);
+            if (image == null) {
+                // A late failed response must not erase an image that already arrived.
+                if (imgNew[id] != null && imgNew[id].img != null && imgNew[id].img != imgEmpty) return false;
+                imageRaw.Remove(id);
+                if (imgEmpty == null) imgEmpty = Image.createRGBImage(new int[1], 1, 1, bl: true);
+                imgNew[id] = new Small(imgEmpty, id);
+                RequestMissingIcon(id);
+                return false;
+            }
+            pendingIcons.Remove(id);
             imgNew[id] = new Small(image, id);
             if (mGraphics.zoomLevel > 1) imageRaw[id] = image;
             return true;
@@ -118,22 +166,23 @@ namespace Game1
 		public static void createImage(int id)
 		{
             if (!EnsureSlot(id)) return;
+            if (imgEmpty == null) imgEmpty = Image.createRGBImage(new int[1], 1, 1, bl: true);
 			if (mGraphics.zoomLevel == 1)
 			{
 				Image image = GameCanvas.loadImage("/SmallImage/Small" + id + ".png");
 				if (image != null)
 				{
-					imgNew[id] = new Small(image, id);
+					ReceiveImage(id, image);
 					return;
 				}
 				imgNew[id] = new Small(imgEmpty, id);
-				Service.gI().requestIcon(id);
+				RequestMissingIcon(id);
 				return;
 			}
 			Image image2 = GameCanvas.loadImage("/SmallImage/Small" + id + ".png");
 			if (image2 != null)
 			{
-				imgNew[id] = new Small(image2, id);
+				ReceiveImage(id, image2);
 				return;
 			}
 			bool flag = false;
@@ -143,7 +192,7 @@ namespace Game1
 				imageRaw.TryGetValue(id, out value);
 				if (value != null)
 				{
-					imgNew[id] = new Small(value, id);
+					ReceiveImage(id, value);
 				}
 				else
 				{
@@ -157,7 +206,7 @@ namespace Game1
 			if (flag)
 			{
 				imgNew[id] = new Small(imgEmpty, id);
-				Service.gI().requestIcon(id);
+				RequestMissingIcon(id);
 			}
 		}
 
@@ -274,6 +323,7 @@ namespace Game1
 
 		public static void update()
 		{
+            RetryMissingIcons();
             if (imgNew == null) return;
 			int num = 0;
 			if (GameCanvas.gameTick % 1000 != 0)

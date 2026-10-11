@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace Game1
@@ -155,7 +155,11 @@ namespace Game1
 			Image image = new Image();
 			try
 			{
-				image.texture.LoadImage(imageData);
+				if (!image.texture.LoadImage(imageData))
+				{
+					UnityEngine.Object.Destroy(image.texture);
+					return null;
+				}
 				image.w = image.texture.width;
 				image.h = image.texture.height;
 				setTextureQuality(image);
@@ -163,6 +167,8 @@ namespace Game1
 			catch (Exception)
 			{
 				Cout.LogError("CREAT IMAGE FROM ARRAY FAIL \n" + Environment.StackTrace);
+				UnityEngine.Object.Destroy(image.texture);
+				return null;
 			}
 			return image;
 		}
