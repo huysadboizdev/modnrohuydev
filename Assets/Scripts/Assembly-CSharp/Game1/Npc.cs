@@ -72,6 +72,10 @@ namespace Game1
 			{
 				ch = 45;
 			}
+			if (templateId == 48)
+			{
+				ch = 38;
+			}
 			if (templateId == 82)
 			{
 				// Icon 15288 is a complete 37x29 chest, not a character part.
@@ -209,6 +213,25 @@ namespace Game1
 			}
 		}
 
+		private static Image nguHanhRock;
+
+		private void PaintNguHanhSeal(mGraphics g)
+		{
+			// Native map rock and head sprite match the surrounding NPC scale.
+			if (nguHanhRock == null)
+				nguHanhRock = GameCanvas.loadImage("/mainimage/ngu_hanh_rock.png");
+			if (nguHanhRock != null)
+				g.drawImage(nguHanhRock, cx, cy, mGraphics.BOTTOM | mGraphics.HCENTER);
+			SmallImage.drawSmallImage(g, 4468, cx - 8, cy - 2, 0, mGraphics.BOTTOM | mGraphics.HCENTER);
+			// A small paper talisman on the right face of the rock.
+			g.setColor(0xF3D888);
+			g.fillRect(cx + 12, cy - 29, 6, 18);
+			g.setColor(0x9C3923);
+			g.fillRect(cx + 14, cy - 27, 2, 3);
+			g.fillRect(cx + 13, cy - 22, 4, 1);
+			g.fillRect(cx + 14, cy - 19, 2, 5);
+		}
+
 		public override void paint(mGraphics g)
 		{
 			if (Char.isLoadingMap || isHide || !isPaint() || statusMe == 15)
@@ -284,6 +307,11 @@ namespace Game1
 								mFont.tahoma_7b_white.drawString(g, NinjaUtil.getTime(seconds), cx, cy - ch - 8 - mFont.tahoma_7.getHeight() - 20 - num + 16, mFont.CENTER, mFont.tahoma_7b_dark);
 							}
 						}
+					}
+					else if (template.npcTemplateId == 48 && TileMap.mapID == 124)
+					{
+						PaintNguHanhSeal(g);
+						dyEff = 65;
 					}
 					else if (template.npcTemplateId == 82)
 					{
