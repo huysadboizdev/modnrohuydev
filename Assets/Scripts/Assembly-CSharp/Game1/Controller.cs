@@ -603,6 +603,12 @@ namespace Game1
 						short num16 = msg.reader().readShort();
 						short num17 = msg.reader().readShort();
 						sbyte isMonkey = msg.reader().readByte();
+                        // Optional tail from newer servers; older appearance packets remain valid.
+                        if (msg.reader().available() > 0)
+                        {
+                            short effect = msg.reader().readSByte();
+                            if (@char != null) @char.idEff_Set_Item = effect;
+                        }
 						if (@char != null)
 						{
 							if (@char.charID == num14)

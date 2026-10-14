@@ -859,21 +859,28 @@ namespace Game1
 			}
 		}
 
-		public void charMove()
+        public bool IsCombatConnectionReady()
+        {
+            if (session == Session_ME.gI()) return Session_ME.gI().isConnected();
+            if (session == Session_ME2.gI()) return Session_ME2.gI().isConnected();
+            return false;
+        }
+
+        public void charMove() { TryCharMove(); }
+		public bool TryCharMove()
 		{
+			if (!IsCombatConnectionReady()) return false;
 			int num = Char.myCharz().cx - Char.myCharz().cxSend;
 			int num2 = Char.myCharz().cy - Char.myCharz().cySend;
 			if (Char.ischangingMap || (num == 0 && num2 == 0) || Controller.isStopReadMessage || Char.myCharz().isTeleport || Char.myCharz().cy <= 0 || Char.myCharz().telePortSkill)
 			{
-				return;
+				return false;
 			}
+            long previousMp = Char.myCharz().cMP;
 			try
 			{
 				Message message = new Message(-7);
-				Char.myCharz().cxSend = Char.myCharz().cx;
-				Char.myCharz().cySend = Char.myCharz().cy;
-				Char.myCharz().cdirSend = Char.myCharz().cdir;
-				Char.myCharz().cactFirst = Char.myCharz().statusMe;
+
 				if (TileMap.tileTypeAt(Char.myCharz().cx / TileMap.size, Char.myCharz().cy / TileMap.size) == 0)
 				{
 					message.writer().writeByte(1);
@@ -901,12 +908,19 @@ namespace Game1
 					message.writer().writeShort(Char.myCharz().cy);
 				}
 				session.sendMessage(message);
+				Char.myCharz().cxSend = Char.myCharz().cx;
+				Char.myCharz().cySend = Char.myCharz().cy;
+				Char.myCharz().cdirSend = Char.myCharz().cdir;
+				Char.myCharz().cactFirst = Char.myCharz().statusMe;
 				GameScr.tickMove++;
 				message.cleanup();
+                return true;
 			}
 			catch (Exception ex)
 			{
-				Cout.LogError("LOI CHAR MOVE " + ex.ToString());
+				Char.myCharz().cMP = previousMp;
+                Cout.LogError("LOI CHAR MOVE " + ex.ToString());
+                return false;
 			}
 		}
 
@@ -991,8 +1005,10 @@ namespace Game1
 			}
 		}
 
-		public void selectSkill(int skillTemplateId)
+        public void selectSkill(int skillTemplateId) { TrySelectSkill(skillTemplateId); }
+		public bool TrySelectSkill(int skillTemplateId)
 		{
+			if (!IsCombatConnectionReady()) return false;
 			Cout.println(Char.myCharz().cName + " SELECT SKILL " + skillTemplateId);
 			Message message = null;
 			try
@@ -1000,14 +1016,16 @@ namespace Game1
 				message = new Message(34);
 				message.writer().writeShort(skillTemplateId);
 				session.sendMessage(message);
+                return true;
 			}
 			catch (Exception ex)
 			{
 				Cout.println(ex.Message + ex.StackTrace);
+                return false;
 			}
 			finally
 			{
-				message.cleanup();
+				if (message != null) message.cleanup();
 			}
 		}
 
@@ -1211,14 +1229,16 @@ namespace Game1
 			}
 		}
 
-		public void sendPlayerAttack(MyVector vMob, MyVector vChar, int type)
+        public void sendPlayerAttack(MyVector vMob, MyVector vChar, int type) { TrySendPlayerAttack(vMob, vChar, type); }
+		public bool TrySendPlayerAttack(MyVector vMob, MyVector vChar, int type)
 		{
+            if (!IsCombatConnectionReady() || vMob == null || vChar == null || (vMob.size() == 0 && vChar.size() == 0)) return false;
 			try
 			{
 				Message message = null;
 				if (type == 0)
 				{
-					return;
+					return false;
 				}
 				if (vMob.size() > 0 && vChar.size() > 0)
 				{
@@ -1278,10 +1298,13 @@ namespace Game1
 				if (message != null)
 				{
 					session.sendMessage(message);
+                    return true;
 				}
+                return false;
 			}
 			catch (Exception)
 			{
+                return false;
 			}
 		}
 

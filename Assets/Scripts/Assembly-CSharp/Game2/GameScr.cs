@@ -3819,6 +3819,15 @@ namespace Game2
 			return true;
 		}
 
+        public bool TrySelectSkillForAutoCombat(Skill skill)
+        {
+            if (skill == null || skill.template == null || !Service.gI().TrySelectSkill(skill.template.id)) return false;
+            Char.myCharz().myskill = skill;
+            lastSkill = skill;
+            selectedIndexSkill = -1;
+            return true;
+        }
+
 		public void doSelectSkill(Skill skill, bool isShortcut)
 		{
 			if (Char.myCharz().isCreateDark || isCharging() || Char.myCharz().taskMaint.taskId <= 1 || ModFunc.isShowMenuChat)
